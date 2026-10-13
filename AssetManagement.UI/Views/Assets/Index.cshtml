@@ -1,0 +1,77 @@
+@model AssetsViewModel
+@{
+    ViewData["Title"] = "Assets";
+}
+
+<form asp-action="Save" method="post" class="card">
+    <h2>@(Model.IsEdit ? $"Edit Asset {Model.Form.AssetTag}" : "Add Asset")</h2>
+    <input type="hidden" asp-for="Form.Id" />
+    <div class="grid">
+        <label>Asset Tag
+            <input asp-for="Form.AssetTag" required maxlength="50" placeholder="LAP-0012" />
+            <span asp-validation-for="Form.AssetTag" class="field-error"></span>
+        </label>
+        <label>Name
+            <input asp-for="Form.Name" required maxlength="100" />
+            <span asp-validation-for="Form.Name" class="field-error"></span>
+        </label>
+        <label>Category
+            <input asp-for="Form.Category" required maxlength="50" placeholder="Laptop, Monitor, Phone..." />
+            <span asp-validation-for="Form.Category" class="field-error"></span>
+        </label>
+        <label>Serial Number
+            <input asp-for="Form.SerialNumber" maxlength="100" />
+            <span asp-validation-for="Form.SerialNumber" class="field-error"></span>
+        </label>
+        <label>Purchase Date
+            <input asp-for="Form.PurchaseDate" type="date" required />
+            <span asp-validation-for="Form.PurchaseDate" class="field-error"></span>
+        </label>
+        @if (Model.IsEdit)
+        {
+            <label>Status
+                <select asp-for="Form.Status" asp-items="Html.GetEnumSelectList<AssetStatus>()"></select>
+            </label>
+        }
+    </div>
+    <div class="actions">
+        <button type="submit" class="primary">Save</button>
+        @if (Model.IsEdit)
+        {
+            <a class="button" asp-action="Index">Cancel</a>
+        }
+    </div>
+</form>
+
+<div class="card">
+    <h2>Assets</h2>
+    <table>
+        <thead>
+            <tr><th>Tag</th><th>Name</th><th>Category</th><th>Serial</th><th>Purchased</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+            @if (Model.Assets.Count == 0)
+            {
+                <tr><td class="empty" colspan="7">No assets yet.</td></tr>
+            }
+            @foreach (var a in Model.Assets)
+            {
+                <tr>
+                    <td>@a.AssetTag</td>
+                    <td>@a.Name</td>
+                    <td>@a.Category</td>
+                    <td>@a.SerialNumber</td>
+                    <td>@DisplayFormat.Date(a.PurchaseDate)</td>
+                    <td><span class="badge @a.Status">@a.Status</span></td>
+                    <td>
+                        <a class="button small" asp-action="Index" asp-route-editId="@a.Id">Edit</a>
+                        <form asp-action="Delete" asp-route-id="@a.Id" method="post" class="inline"
+                              data-confirm="Delete asset @a.AssetTag?" onsubmit="return confirm(this.dataset.confirm)">
+                            <button type="submit" class="small danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

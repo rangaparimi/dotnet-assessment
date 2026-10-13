@@ -1,0 +1,29 @@
+@{
+    var current = ViewContext.RouteData.Values["controller"] as string;
+    string TabClass(string name) => name == current ? "tab active" : "tab";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Asset Management</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <h1>Asset Management</h1>
+        <nav>
+            <a class="@TabClass("Assets")" asp-controller="Assets" asp-action="Index">Assets</a>
+            <a class="@TabClass("Employees")" asp-controller="Employees" asp-action="Index">Employees</a>
+            <a class="@TabClass("Allocations")" asp-controller="Allocations" asp-action="Index">Allocation</a>
+            <a class="@TabClass("Returns")" asp-controller="Returns" asp-action="Index">Returns</a>
+        </nav>
+    </header>
+
+    <main>
+        <partial name="_Messages" />
+        @RenderBody()
+    </main>
+</body>
+</html>

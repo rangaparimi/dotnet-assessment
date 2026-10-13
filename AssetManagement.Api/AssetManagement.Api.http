@@ -1,0 +1,84 @@
+@host = http://localhost:5025
+
+### 1. Create asset
+POST {{host}}/api/assets
+Content-Type: application/json
+
+{
+  "assetTag": "LAP-0012",
+  "name": "Dell Latitude 5440",
+  "category": "Laptop",
+  "serialNumber": "DL5440-XYZ123",
+  "purchaseDate": "2026-01-15"
+}
+
+### Update asset (status is optional: Available / UnderRepair / Retired)
+PUT {{host}}/api/assets/1
+Content-Type: application/json
+
+{
+  "assetTag": "LAP-0012",
+  "name": "Dell Latitude 5440 (16GB)",
+  "category": "Laptop",
+  "serialNumber": "DL5440-XYZ123",
+  "purchaseDate": "2026-01-15",
+  "status": "Available"
+}
+
+### List assets
+GET {{host}}/api/assets
+
+### 2. Create employee
+POST {{host}}/api/employees
+Content-Type: application/json
+
+{
+  "employeeCode": "EMP-001",
+  "fullName": "Ravi Kumar",
+  "email": "ravi.kumar@company.com",
+  "department": "Engineering"
+}
+
+### Update employee
+PUT {{host}}/api/employees/1
+Content-Type: application/json
+
+{
+  "employeeCode": "EMP-001",
+  "fullName": "Ravi Kumar",
+  "email": "ravi.kumar@company.com",
+  "department": "Platform Engineering",
+  "isActive": true
+}
+
+### 3. Allocate asset 1 to employee 1
+POST {{host}}/api/allocations
+Content-Type: application/json
+
+{
+  "assetId": 1,
+  "employeeId": 1,
+  "remarks": "Issued for onboarding"
+}
+
+### Open allocations
+GET {{host}}/api/allocations?active=true
+
+### Assets currently held by employee 1
+GET {{host}}/api/employees/1/assets
+
+### 4. Return (returnCondition: Good or Damaged)
+POST {{host}}/api/returns
+Content-Type: application/json
+
+{
+  "allocationId": 1,
+  "returnCondition": "Good",
+  "remarks": "Returned with charger"
+}
+
+### Returned allocations
+GET {{host}}/api/returns
+
+### 5. Verify asset status is Available again
+GET {{host}}/api/assets/1

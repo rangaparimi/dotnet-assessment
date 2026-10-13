@@ -1,0 +1,101 @@
+@model EmployeesViewModel
+@{
+    ViewData["Title"] = "Employees";
+}
+
+<form asp-action="Save" method="post" class="card">
+    <h2>@(Model.IsEdit ? $"Edit Employee {Model.Form.EmployeeCode}" : "Add Employee")</h2>
+    <input type="hidden" asp-for="Form.Id" />
+    <div class="grid">
+        <label>Employee Code
+            <input asp-for="Form.EmployeeCode" required maxlength="20" placeholder="EMP-001" />
+            <span asp-validation-for="Form.EmployeeCode" class="field-error"></span>
+        </label>
+        <label>Full Name
+            <input asp-for="Form.FullName" required maxlength="100" />
+            <span asp-validation-for="Form.FullName" class="field-error"></span>
+        </label>
+        <label>Email
+            <input asp-for="Form.Email" type="email" required maxlength="100" />
+            <span asp-validation-for="Form.Email" class="field-error"></span>
+        </label>
+        <label>Department
+            <input asp-for="Form.Department" required maxlength="50" />
+            <span asp-validation-for="Form.Department" class="field-error"></span>
+        </label>
+        @if (Model.IsEdit)
+        {
+            <label class="checkbox">
+                <input asp-for="Form.IsActive" /> Active
+            </label>
+        }
+    </div>
+    <div class="actions">
+        <button type="submit" class="primary">Save</button>
+        @if (Model.IsEdit)
+        {
+            <a class="button" asp-action="Index">Cancel</a>
+        }
+    </div>
+</form>
+
+<div class="card">
+    <h2>Employees</h2>
+    <table>
+        <thead>
+            <tr><th>Code</th><th>Name</th><th>Email</th><th>Department</th><th>Active</th><th></th></tr>
+        </thead>
+        <tbody>
+            @if (Model.Employees.Count == 0)
+            {
+                <tr><td class="empty" colspan="6">No employees yet.</td></tr>
+            }
+            @foreach (var e in Model.Employees)
+            {
+                <tr>
+                    <td>@e.EmployeeCode</td>
+                    <td>@e.FullName</td>
+                    <td>@e.Email</td>
+                    <td>@e.Department</td>
+                    <td>@(e.IsActive ? "Yes" : "No")</td>
+                    <td>
+                        <a class="button small" asp-action="Index" asp-route-heldById="@e.Id">Assets</a>
+                        <a class="button small" asp-action="Index" asp-route-editId="@e.Id">Edit</a>
+                        <form asp-action="Delete" asp-route-id="@e.Id" method="post" class="inline"
+                              data-confirm="Delete employee @e.EmployeeCode?" onsubmit="return confirm(this.dataset.confirm)">
+                            <button type="submit" class="small danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.HeldBy != null)
+{
+    <div class="card">
+        <h2>Assets held by @Model.HeldBy.FullName</h2>
+        <table>
+            <thead>
+                <tr><th>Allocation #</th><th>Tag</th><th>Name</th><th>Category</th><th>Allocated</th></tr>
+            </thead>
+            <tbody>
+                @if (Model.HeldAssets.Count == 0)
+                {
+                    <tr><td class="empty" colspan="5">This employee holds no assets.</td></tr>
+                }
+                @foreach (var h in Model.HeldAssets)
+                {
+                    <tr>
+                        <td>@h.AllocationId</td>
+                        <td>@h.AssetTag</td>
+                        <td>@h.Name</td>
+                        <td>@h.Category</td>
+                        <td>@DisplayFormat.DateTime(h.AllocatedDate)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

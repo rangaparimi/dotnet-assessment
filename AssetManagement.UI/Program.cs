@@ -1,0 +1,26 @@
+using AssetManagement.UI.Services;
+using Microsoft.AspNetCore.Mvc;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// MVC: controllers + Razor views (.cshtml). Every POST must carry the
+// anti-forgery token that <form method="post"> adds automatically.
+builder.Services.AddControllersWithViews(o =>
+    o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
+
+// Typed HttpClient for the API. Calls go UI server -> API server, so no CORS is involved.
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
+    ?? throw new InvalidOperationException("ApiBaseUrl is not configured.");
+builder.Services.AddHttpClient<ApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/"));
+
+var app = builder.Build();
+
+app.UseStaticFiles();   // wwwroot/css/site.css
+app.UseRouting();
+
+// "/" -> AssetsController.Index, "/Employees" -> EmployeesController.Index, ...
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Assets}/{action=Index}/{id?}");
+
+app.Run();
