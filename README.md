@@ -43,8 +43,10 @@ Allocation and Returns share one table (`AssetAllocations`). A return closes an 
 
 Needs only Docker Desktop (no .NET SDK or SQL Server on the machine). From the repo root:
 ```
+cp .env.example .env        # then open .env and set your own SA_PASSWORD
 docker compose up --build
 ```
+All Docker settings and secrets (SQL `sa` password, ports, environment) live in `.env`, which is git-ignored and never committed. `.env.example` is the committed template. If `SA_PASSWORD` is missing, `docker compose` stops with an error instead of using a default.
 - UI: http://localhost:5003
 - Swagger: http://localhost:5025/swagger
 

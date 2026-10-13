@@ -3,17 +3,20 @@
 #   API     -> http://localhost:5025/swagger
 #   SQL     -> localhost,1433  (user: sa)
 #
-# Host ports match launchSettings.json. Inside Docker the UI server reaches the
-# API by its service name (ApiBaseUrl=http://api:8080), not through localhost.
+# All settings and secrets come from the .env file next to this one
+# (copy .env.example to .env first). No passwords are written here.
+#
+# Inside Docker the UI server reaches the API by its service name
+# (ApiBaseUrl=http://api:8080), not through localhost.
 
 services:
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "${SA_PASSWORD:-Asset_Mgmt2026!}"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:?SA_PASSWORD is missing - copy .env.example to .env and set it}"
     ports:
-      - "1433:1433"
+      - "${SQL_PORT:-1433}:1433"
     volumes:
       - sqldata:/var/opt/mssql      # keeps the data when containers are recreated
     healthcheck:
@@ -29,11 +32,11 @@ services:
       context: .
       dockerfile: AssetManagement.Api/Dockerfile
     environment:
-      ASPNETCORE_ENVIRONMENT: Development   # enables Swagger
-      ConnectionStrings__Default: "Server=db,1433;Database=AssetManagement;User Id=sa;Password=${SA_PASSWORD:-Asset_Mgmt2026!};TrustServerCertificate=True"
-      ApplyMigrationsOnStartup: "true"      # creates the database/tables on first run
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
+      ConnectionStrings__Default: "Server=db,1433;Database=AssetManagement;User Id=sa;Password=${SA_PASSWORD:?SA_PASSWORD is missing};TrustServerCertificate=True"
+      ApplyMigrationsOnStartup: "${APPLY_MIGRATIONS_ON_STARTUP:-false}"
     ports:
-      - "5025:8080"
+      - "${API_PORT:-5025}:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -44,9 +47,9 @@ services:
       context: .
       dockerfile: AssetManagement.UI/Dockerfile
     environment:
-      ApiBaseUrl: "http://api:8080"         # the UI server calls the API over the compose network
+      ApiBaseUrl: "http://api:8080"         # container-to-container address, not a secret
     ports:
-      - "5003:8080"
+      - "${UI_PORT:-5003}:8080"
     depends_on:
       - api
 
