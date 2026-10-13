@@ -1,31 +1,31 @@
-@model ReturnsViewModel
+@model AssetReturn
 @{
     ViewData["Title"] = "Returns";
+    var openAllocations = (List<Allocation>)ViewBag.OpenAllocations;
+    var returns = (List<AssetReturn>)ViewBag.Returns;
 }
 
 <form asp-action="Create" method="post" class="card">
     <h2>Record Return</h2>
     <div class="grid">
         <label>Open allocation
-            <select asp-for="Form.AllocationId" required>
-                <option value="">@(Model.OpenAllocations.Count == 0 ? "No open allocations" : "Choose an allocation")</option>
-                @foreach (var x in Model.OpenAllocations)
+            <select asp-for="AllocationId" required>
+                <option value="">Choose an allocation</option>
+                @foreach (var x in openAllocations)
                 {
                     <option value="@x.Id">#@x.Id: @x.AssetTag held by @x.EmployeeName</option>
                 }
             </select>
-            <span asp-validation-for="Form.AllocationId" class="field-error"></span>
+            <span asp-validation-for="AllocationId" class="field-error"></span>
         </label>
         <label>Condition
-            <select asp-for="Form.ReturnCondition">
+            <select asp-for="ReturnCondition">
                 <option>Good</option>
                 <option>Damaged</option>
             </select>
-            <span asp-validation-for="Form.ReturnCondition" class="field-error"></span>
         </label>
         <label class="wide">Remarks
-            <input asp-for="Form.Remarks" maxlength="200" />
-            <span asp-validation-for="Form.Remarks" class="field-error"></span>
+            <input asp-for="Remarks" maxlength="200" />
         </label>
     </div>
     <div class="actions">
@@ -40,18 +40,18 @@
             <tr><th>#</th><th>Asset</th><th>Employee</th><th>Allocated</th><th>Returned</th><th>Condition</th><th>Asset Status</th><th>Remarks</th></tr>
         </thead>
         <tbody>
-            @if (Model.Returns.Count == 0)
+            @if (returns.Count == 0)
             {
                 <tr><td class="empty" colspan="8">No returns yet.</td></tr>
             }
-            @foreach (var r in Model.Returns)
+            @foreach (var r in returns)
             {
                 <tr>
                     <td>@r.AllocationId</td>
                     <td>@r.AssetTag - @r.AssetName</td>
                     <td>@r.EmployeeName</td>
-                    <td>@DisplayFormat.DateTime(r.AllocatedDate)</td>
-                    <td>@DisplayFormat.DateTime(r.ReturnedDate)</td>
+                    <td>@r.AllocatedDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@r.ReturnedDate?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
                     <td>@r.ReturnCondition</td>
                     <td><span class="badge @r.AssetStatus">@r.AssetStatus</span></td>
                     <td>@r.Remarks</td>

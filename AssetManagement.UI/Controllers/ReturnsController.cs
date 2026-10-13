@@ -1,62 +1,38 @@
-using AssetManagement.UI.Services;
-using AssetManagement.UI.ViewModels;
+using AssetManagement.UI.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssetManagement.UI.Controllers;
 
-public class ReturnsController : Controller
+public class ReturnsController : BaseController
 {
-    private readonly ApiClient _api;
+    public ReturnsController(IHttpClientFactory httpClientFactory) : base(httpClientFactory) { }
 
-    public ReturnsController(ApiClient api)
-    {
-        _api = api;
-    }
-
-    // GET /Returns
-    // GET /Returns?allocationId=7  -> "Return" link from the Allocation page, pre-selects allocation 7
+    // GET /Returns  or  /Returns?allocationId=7 (pre-selects allocation 7)
     public async Task<IActionResult> Index(int? allocationId)
     {
-        return View(await BuildPageAsync(new ReturnFormModel { AllocationId = allocationId }));
+        await LoadPageDataAsync();
+        return View(new AssetReturn { AllocationId = allocationId });
     }
 
     // POST /Returns/Create
     [HttpPost]
-    public async Task<IActionResult> Create([Bind(Prefix = "Form")] ReturnFormModel form)
+    public async Task<IActionResult> Create(AssetReturn assetReturn)
     {
-        if (ModelState.IsValid)
+        if (ModelState.IsValid && await SendAsync(HttpMethod.Post, "api/returns", assetReturn))
         {
-            var result = await _api.ReturnAsync(form);
-            if (result.Success)
-            {
-                TempData["Success"] = $"Asset {result.Data!.AssetTag} returned. Status is now {result.Data.AssetStatus}.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            TempData["Error"] = result.Error;
+            TempData["Success"] = "Return recorded.";
+            return RedirectToAction(nameof(Index));
         }
 
-        return View(nameof(Index), await BuildPageAsync(form));
+        // Show the page again with what the user picked
+        await LoadPageDataAsync();
+        return View(nameof(Index), assetReturn);
     }
 
-    private async Task<ReturnsViewModel> BuildPageAsync(ReturnFormModel form)
+    // Open allocations for the dropdown, and the list of returned assets
+    private async Task LoadPageDataAsync()
     {
-        var openTask = _api.GetAllocationsAsync(active: true);
-        var returnsTask = _api.GetReturnsAsync();
-        await Task.WhenAll(openTask, returnsTask);
-
-        var open = openTask.Result;
-        var returns = returnsTask.Result;
-
-        var error = new[] { open.Error, returns.Error }.FirstOrDefault(e => e != "");
-        if (error != null)
-            TempData["Error"] = error;
-
-        return new ReturnsViewModel
-        {
-            OpenAllocations = open.Data ?? [],
-            Returns = returns.Data ?? [],
-            Form = form
-        };
+        ViewBag.OpenAllocations = await GetAsync<List<Allocation>>("api/allocations?active=true");
+        ViewBag.Returns = await GetAsync<List<AssetReturn>>("api/returns");
     }
 }

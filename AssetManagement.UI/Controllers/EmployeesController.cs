@@ -1,91 +1,57 @@
-using AssetManagement.UI.Services;
-using AssetManagement.UI.ViewModels;
+using AssetManagement.UI.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssetManagement.UI.Controllers;
 
-public class EmployeesController : Controller
+public class EmployeesController : BaseController
 {
-    private readonly ApiClient _api;
+    public EmployeesController(IHttpClientFactory httpClientFactory) : base(httpClientFactory) { }
 
-    public EmployeesController(ApiClient api)
-    {
-        _api = api;
-    }
-
-    // GET /Employees              -> list + empty "Add Employee" form
-    // GET /Employees?editId=3     -> form filled with employee 3
-    // GET /Employees?heldById=3   -> also show the assets employee 3 holds
+    // GET /Employees  or  /Employees?editId=3 (fills the form)
+    //                 or  /Employees?heldById=3 (shows the assets employee 3 holds)
     public async Task<IActionResult> Index(int? editId, int? heldById)
     {
-        var model = await BuildPageAsync(new EmployeeFormModel());
+        var employees = await GetAsync<List<Employee>>("api/employees");
+        ViewBag.Employees = employees;
 
-        if (editId.HasValue)
+        if (heldById != null)
         {
-            var employee = model.Employees.FirstOrDefault(e => e.Id == editId);
-            if (employee == null)
-                TempData["Error"] = $"Employee with id {editId} was not found.";
-            else
-                model.Form = EmployeeFormModel.FromDto(employee);
+            var open = await GetAsync<List<Allocation>>("api/allocations?active=true");
+            ViewBag.HeldBy = employees.FirstOrDefault(e => e.Id == heldById);
+            ViewBag.HeldAssets = open.Where(a => a.EmployeeId == heldById).ToList();
         }
 
-        if (heldById.HasValue)
-        {
-            var held = await _api.GetHeldAssetsAsync(heldById.Value);
-            if (held.Success)
-            {
-                model.HeldBy = model.Employees.FirstOrDefault(e => e.Id == heldById);
-                model.HeldAssets = held.Data!;
-            }
-            else
-            {
-                TempData["Error"] = held.Error;
-            }
-        }
-
-        return View(model);
+        var form = employees.FirstOrDefault(e => e.Id == editId) ?? new Employee();
+        return View(form);
     }
 
-    // POST /Employees/Save - add when Form.Id is empty, update otherwise
+    // POST /Employees/Save - adds a new employee (Id = 0) or updates an existing one
     [HttpPost]
-    public async Task<IActionResult> Save([Bind(Prefix = "Form")] EmployeeFormModel form)
+    public async Task<IActionResult> Save(Employee employee)
     {
         if (ModelState.IsValid)
         {
-            var result = form.Id is int id
-                ? await _api.UpdateEmployeeAsync(id, form)
-                : await _api.CreateEmployeeAsync(form);
+            var saved = employee.Id == 0
+                ? await SendAsync(HttpMethod.Post, "api/employees", employee)
+                : await SendAsync(HttpMethod.Put, $"api/employees/{employee.Id}", employee);
 
-            if (result.Success)
+            if (saved)
             {
-                TempData["Success"] = $"Employee {result.Data!.EmployeeCode} {(form.Id.HasValue ? "updated" : "added")}.";
+                TempData["Success"] = $"Employee {employee.EmployeeCode} saved.";
                 return RedirectToAction(nameof(Index));
             }
-
-            TempData["Error"] = result.Error;
         }
 
-        return View(nameof(Index), await BuildPageAsync(form));
+        // Show the page again with what the user typed
+        ViewBag.Employees = await GetAsync<List<Employee>>("api/employees");
+        return View(nameof(Index), employee);
     }
 
+    // POST /Employees/Delete/3
     [HttpPost]
     public async Task<IActionResult> Delete(int id)
     {
-        var result = await _api.DeleteEmployeeAsync(id);
-        if (result.Success)
-            TempData["Success"] = result.Data!.Message;
-        else
-            TempData["Error"] = result.Error;
-
+        await SendAsync(HttpMethod.Delete, $"api/employees/{id}");
         return RedirectToAction(nameof(Index));
-    }
-
-    private async Task<EmployeesViewModel> BuildPageAsync(EmployeeFormModel form)
-    {
-        var employees = await _api.GetEmployeesAsync();
-        if (!employees.Success)
-            TempData["Error"] = employees.Error;
-
-        return new EmployeesViewModel { Employees = employees.Data ?? [], Form = form };
     }
 }

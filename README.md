@@ -63,15 +63,13 @@ ASP.NET Core MVC with four pages (one controller + one Razor view each):
 
 API errors (e.g. "Asset LAP-0012 is already allocated.") appear in the message bar at the top.
 
-How it works: the browser only talks to the UI. Each page's controller calls the API through a typed `HttpClient` (`Services/ApiClient.cs`), builds a view model and renders the `.cshtml` view. Forms post back to the UI controller (with an anti-forgery token), which calls the API and then redirects (Post/Redirect/Get) so refreshing never re-submits.
+How it works: the browser only talks to the UI. Each controller calls the API with `HttpClient` (helpers in `BaseController`), passes the data to its `.cshtml` view and shows it. Forms post back to the UI controller (with an anti-forgery token), which calls the API and then redirects (Post/Redirect/Get) so refreshing never re-submits.
 
 ```
 AssetManagement.UI/
-├── Controllers/   AssetsController, EmployeesController, AllocationsController, ReturnsController
+├── Controllers/   BaseController (GetAsync / SendAsync helpers) + one controller per page
+├── Models/        Asset, Employee, Allocation, AssetReturn - used for both the lists and the forms
 ├── Views/         Shared/_Layout.cshtml, Shared/_Messages.cshtml, <Controller>/Index.cshtml
-├── ViewModels/    page models + form models (with validation attributes)
-├── Models/        copies of the API's response DTOs
-├── Services/      ApiClient (typed HttpClient) + ApiResult
 └── wwwroot/css/   site.css (static files are still served from wwwroot)
 ```
 

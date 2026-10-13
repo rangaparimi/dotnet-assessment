@@ -1,17 +1,21 @@
-using AssetManagement.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// MVC: controllers + Razor views (.cshtml). Every POST must carry the
-// anti-forgery token that <form method="post"> adds automatically.
+// MVC: controllers + Razor views (.cshtml)
 builder.Services.AddControllersWithViews(o =>
-    o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
+{
+    // Every POST must carry the anti-forgery token that <form method="post"> adds automatically
+    o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
 
-// Typed HttpClient for the API. Calls go UI server -> API server, so no CORS is involved.
+    // Models are used for both lists and forms, so only validate fields that have attributes
+    o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+});
+
+// HttpClient for the API. Calls go UI server -> API server, so no CORS is involved.
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
     ?? throw new InvalidOperationException("ApiBaseUrl is not configured.");
-builder.Services.AddHttpClient<ApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/"));
+builder.Services.AddHttpClient("Api", c => c.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/') + "/"));
 
 var app = builder.Build();
 

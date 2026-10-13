@@ -1,74 +1,50 @@
 using AssetManagement.UI.Models;
-using AssetManagement.UI.Services;
-using AssetManagement.UI.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssetManagement.UI.Controllers;
 
-public class AllocationsController : Controller
+public class AllocationsController : BaseController
 {
-    private readonly ApiClient _api;
-
-    public AllocationsController(ApiClient api)
-    {
-        _api = api;
-    }
+    public AllocationsController(IHttpClientFactory httpClientFactory) : base(httpClientFactory) { }
 
     // GET /Allocations?show=active|returned|all
     public async Task<IActionResult> Index(string show = "active")
     {
-        return View(await BuildPageAsync(new AllocationFormModel(), show));
+        await LoadPageDataAsync(show);
+        return View(new Allocation());
     }
 
     // POST /Allocations/Create
     [HttpPost]
-    public async Task<IActionResult> Create([Bind(Prefix = "Form")] AllocationFormModel form)
+    public async Task<IActionResult> Create(Allocation allocation)
     {
-        if (ModelState.IsValid)
+        if (ModelState.IsValid && await SendAsync(HttpMethod.Post, "api/allocations", allocation))
         {
-            var result = await _api.AllocateAsync(form);
-            if (result.Success)
-            {
-                TempData["Success"] = $"Asset {result.Data!.AssetTag} allocated to {result.Data.EmployeeName}.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            TempData["Error"] = result.Error;
+            TempData["Success"] = "Asset allocated.";
+            return RedirectToAction(nameof(Index));
         }
 
-        return View(nameof(Index), await BuildPageAsync(form, "active"));
+        // Show the page again with what the user picked
+        await LoadPageDataAsync("active");
+        return View(nameof(Index), allocation);
     }
 
-    private async Task<AllocationsViewModel> BuildPageAsync(AllocationFormModel form, string show)
+    // Dropdowns (available assets, active employees) and the allocation list
+    private async Task LoadPageDataAsync(string show)
     {
-        bool? active = show switch
+        var assets = await GetAsync<List<Asset>>("api/assets");
+        var employees = await GetAsync<List<Employee>>("api/employees");
+
+        var url = show switch
         {
-            "returned" => false,
-            "all" => null,
-            _ => true
+            "returned" => "api/allocations?active=false",
+            "all" => "api/allocations",
+            _ => "api/allocations?active=true"
         };
 
-        // The three API calls don't depend on each other, so run them at the same time
-        var assetsTask = _api.GetAssetsAsync();
-        var employeesTask = _api.GetEmployeesAsync();
-        var allocationsTask = _api.GetAllocationsAsync(active);
-        await Task.WhenAll(assetsTask, employeesTask, allocationsTask);
-
-        var assets = assetsTask.Result;
-        var employees = employeesTask.Result;
-        var allocations = allocationsTask.Result;
-
-        var error = new[] { assets.Error, employees.Error, allocations.Error }.FirstOrDefault(e => e != "");
-        if (error != null)
-            TempData["Error"] = error;
-
-        return new AllocationsViewModel
-        {
-            AvailableAssets = (assets.Data ?? []).Where(a => a.Status == AssetStatus.Available).ToList(),
-            ActiveEmployees = (employees.Data ?? []).Where(e => e.IsActive).ToList(),
-            Allocations = allocations.Data ?? [],
-            Form = form,
-            Show = active switch { true => "active", false => "returned", null => "all" }
-        };
+        ViewBag.Assets = assets.Where(a => a.Status == "Available").ToList();
+        ViewBag.Employees = employees.Where(e => e.IsActive).ToList();
+        ViewBag.Allocations = await GetAsync<List<Allocation>>(url);
+        ViewBag.Show = show;
     }
 }

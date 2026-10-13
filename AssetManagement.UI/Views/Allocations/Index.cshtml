@@ -1,34 +1,37 @@
-@model AllocationsViewModel
+@model Allocation
 @{
     ViewData["Title"] = "Allocation";
+    var assets = (List<Asset>)ViewBag.Assets;
+    var employees = (List<Employee>)ViewBag.Employees;
+    var allocations = (List<Allocation>)ViewBag.Allocations;
+    var show = (string)ViewBag.Show;
 }
 
 <form asp-action="Create" method="post" class="card">
     <h2>Allocate Asset</h2>
     <div class="grid">
         <label>Asset (available only)
-            <select asp-for="Form.AssetId" required>
-                <option value="">@(Model.AvailableAssets.Count == 0 ? "No available assets" : "Choose an asset")</option>
-                @foreach (var a in Model.AvailableAssets)
+            <select asp-for="AssetId" required>
+                <option value="">Choose an asset</option>
+                @foreach (var a in assets)
                 {
                     <option value="@a.Id">@a.AssetTag - @a.Name</option>
                 }
             </select>
-            <span asp-validation-for="Form.AssetId" class="field-error"></span>
+            <span asp-validation-for="AssetId" class="field-error"></span>
         </label>
         <label>Employee (active only)
-            <select asp-for="Form.EmployeeId" required>
-                <option value="">@(Model.ActiveEmployees.Count == 0 ? "No active employees" : "Choose an employee")</option>
-                @foreach (var e in Model.ActiveEmployees)
+            <select asp-for="EmployeeId" required>
+                <option value="">Choose an employee</option>
+                @foreach (var e in employees)
                 {
                     <option value="@e.Id">@e.EmployeeCode - @e.FullName</option>
                 }
             </select>
-            <span asp-validation-for="Form.EmployeeId" class="field-error"></span>
+            <span asp-validation-for="EmployeeId" class="field-error"></span>
         </label>
         <label class="wide">Remarks
-            <input asp-for="Form.Remarks" maxlength="250" />
-            <span asp-validation-for="Form.Remarks" class="field-error"></span>
+            <input asp-for="Remarks" maxlength="250" />
         </label>
     </div>
     <div class="actions">
@@ -39,12 +42,12 @@
 <div class="card">
     <div class="card-header">
         <h2>Allocations</h2>
-        @* A GET form: changing the filter reloads the page with ?show=... *@
+        @* Changing the filter reloads the page with ?show=... *@
         <form asp-action="Index" method="get">
             <select name="show" onchange="this.form.submit()">
-                <option value="active" selected="@(Model.Show == "active")">Active only</option>
-                <option value="returned" selected="@(Model.Show == "returned")">Returned only</option>
-                <option value="all" selected="@(Model.Show == "all")">All</option>
+                <option value="active" selected="@(show == "active")">Active only</option>
+                <option value="returned" selected="@(show == "returned")">Returned only</option>
+                <option value="all" selected="@(show == "all")">All</option>
             </select>
         </form>
     </div>
@@ -53,18 +56,18 @@
             <tr><th>#</th><th>Asset</th><th>Employee</th><th>Allocated</th><th>Returned</th><th>Condition</th><th>Remarks</th><th></th></tr>
         </thead>
         <tbody>
-            @if (Model.Allocations.Count == 0)
+            @if (allocations.Count == 0)
             {
                 <tr><td class="empty" colspan="8">No allocations.</td></tr>
             }
-            @foreach (var x in Model.Allocations)
+            @foreach (var x in allocations)
             {
                 <tr>
                     <td>@x.Id</td>
                     <td>@x.AssetTag - @x.AssetName</td>
                     <td>@x.EmployeeCode - @x.EmployeeName</td>
-                    <td>@DisplayFormat.DateTime(x.AllocatedDate)</td>
-                    <td>@DisplayFormat.DateTime(x.ReturnedDate)</td>
+                    <td>@x.AllocatedDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@x.ReturnedDate?.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
                     <td>@x.ReturnCondition</td>
                     <td>@x.Remarks</td>
                     <td>
