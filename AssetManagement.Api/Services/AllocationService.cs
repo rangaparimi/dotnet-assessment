@@ -1,3 +1,4 @@
+using AssetManagement.Api.Common;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Models.Enums;
@@ -64,6 +65,12 @@ public class AllocationService : IAllocationService
     {
         var allocations = await _allocations.GetAllWithDetailsAsync(active);
         return allocations.Select(x => ToDto(x, x.Asset, x.Employee)).ToList();
+    }
+
+    public async Task<PagedResult<AllocationDto>> GetPagedAsync(bool? active, int page, int pageSize)
+    {
+        var result = await _allocations.GetPagedWithDetailsAsync(active, page, pageSize);
+        return result.Map(x => ToDto(x, x.Asset, x.Employee));
     }
 
     private static AllocationDto ToDto(AssetAllocation x, Asset asset, Employee employee) => new()

@@ -1,3 +1,4 @@
+using AssetManagement.Api.Common;
 using AssetManagement.Api.Data;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Repositories.Interfaces;
@@ -16,6 +17,9 @@ public class AssetRepository : IAssetRepository
 
     public Task<List<Asset>> GetAllAsync() =>
         _db.Assets.AsNoTracking().OrderBy(a => a.AssetTag).ToListAsync();
+
+    public Task<PagedResult<Asset>> GetPagedAsync(int page, int pageSize) =>
+        _db.Assets.AsNoTracking().OrderBy(a => a.AssetTag).ToPagedResultAsync(page, pageSize);
 
     // Tracked, so changes made by the service are saved by IUnitOfWork
     public async Task<Asset?> GetByIdAsync(int id) =>

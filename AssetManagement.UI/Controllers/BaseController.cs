@@ -1,4 +1,5 @@
 using System.Text.Json;
+using AssetManagement.UI.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssetManagement.UI.Controllers;
@@ -30,6 +31,16 @@ public abstract class BaseController : Controller
             TempData["Error"] = "Cannot reach the API. Is AssetManagement.Api running?";
         }
         return new T();
+    }
+
+    // Rows per page on every list
+    protected const int PageSize = 10;
+
+    // GET one page from a ".../paged" endpoint. An empty page is returned if the call fails.
+    protected Task<PagedResult<T>> GetPageAsync<T>(string url, int page)
+    {
+        var separator = url.Contains('?') ? "&" : "?";
+        return GetAsync<PagedResult<T>>($"{url}{separator}page={page}&pageSize={PageSize}");
     }
 
     // POST, PUT or DELETE to the API. Returns true if it worked.

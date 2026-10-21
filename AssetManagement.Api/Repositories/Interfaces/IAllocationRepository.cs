@@ -1,3 +1,4 @@
+using AssetManagement.Api.Common;
 using AssetManagement.Api.Models;
 
 namespace AssetManagement.Api.Repositories.Interfaces;
@@ -10,6 +11,8 @@ public interface IAllocationRepository
     // active: true = not returned yet, false = returned, null = all
     Task<List<AssetAllocation>> GetAllWithDetailsAsync(bool? active);
     Task<List<AssetAllocation>> GetReturnedWithDetailsAsync();
+    Task<PagedResult<AssetAllocation>> GetPagedWithDetailsAsync(bool? active, int page, int pageSize);
+    Task<PagedResult<AssetAllocation>> GetReturnedPagedWithDetailsAsync(int page, int pageSize);
     Task<List<AssetAllocation>> GetOpenByEmployeeWithAssetAsync(int employeeId);
 
     Task<bool> EmployeeHoldsAssetsAsync(int employeeId);

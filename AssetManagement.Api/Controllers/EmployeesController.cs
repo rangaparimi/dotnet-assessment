@@ -1,3 +1,4 @@
+using AssetManagement.Api.Common;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,13 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    // GET /api/employees/paged?page=2&pageSize=10  -> one page of employees plus the totals
+    [HttpGet("paged")]
+    public async Task<ActionResult<PagedResult<EmployeeDto>>> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        return Ok(await _employeeService.GetPagedAsync(page, pageSize));
+    }
+
     public async Task<ActionResult<EmployeeDto>> GetById(int id)
     {
         var result = await _employeeService.GetByIdAsync(id);

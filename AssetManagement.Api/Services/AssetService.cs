@@ -1,3 +1,4 @@
+using AssetManagement.Api.Common;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Models.Enums;
@@ -23,6 +24,12 @@ public class AssetService : IAssetService
     {
         var assets = await _assets.GetAllAsync();
         return assets.Select(ToDto).ToList();
+    }
+
+    public async Task<PagedResult<AssetDto>> GetPagedAsync(int page, int pageSize)
+    {
+        var result = await _assets.GetPagedAsync(page, pageSize);
+        return result.Map(ToDto);
     }
 
     public async Task<ServiceResult<AssetDto>> GetByIdAsync(int id)

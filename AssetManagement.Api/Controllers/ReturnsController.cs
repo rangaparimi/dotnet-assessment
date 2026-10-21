@@ -1,3 +1,4 @@
+using AssetManagement.Api.Common;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,13 @@ public class ReturnsController : ControllerBase
     public async Task<ActionResult<List<ReturnDto>>> GetAll()
     {
         return Ok(await _returnService.GetAllAsync());
+    }
+
+    // GET /api/returns/paged?page=2&pageSize=10  -> one page of returned assets plus the totals
+    [HttpGet("paged")]
+    public async Task<ActionResult<PagedResult<ReturnDto>>> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        return Ok(await _returnService.GetPagedAsync(page, pageSize));
     }
 
     [HttpPost]

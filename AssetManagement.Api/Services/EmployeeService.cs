@@ -1,3 +1,4 @@
+using AssetManagement.Api.Common;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Models;
 using AssetManagement.Api.Repositories.Interfaces;
@@ -22,6 +23,12 @@ public class EmployeeService : IEmployeeService
     {
         var employees = await _employees.GetAllAsync();
         return employees.Select(ToDto).ToList();
+    }
+
+    public async Task<PagedResult<EmployeeDto>> GetPagedAsync(int page, int pageSize)
+    {
+        var result = await _employees.GetPagedAsync(page, pageSize);
+        return result.Map(ToDto);
     }
 
     public async Task<ServiceResult<EmployeeDto>> GetByIdAsync(int id)

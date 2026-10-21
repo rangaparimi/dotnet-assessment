@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Employees";
     var employees = (List<Employee>)ViewBag.Employees;
+    var paged = (PagedResult<Employee>)ViewBag.Paged;
     var heldBy = ViewBag.HeldBy as Employee;
     var heldAssets = ViewBag.HeldAssets as List<Allocation>;
     var isEdit = Model.Id != 0;
@@ -13,6 +14,7 @@
 <form asp-action="Save" method="post" class="card">
     <h2>@(isEdit ? $"Edit Employee {Model.EmployeeCode}" : "Add Employee")</h2>
     <input type="hidden" asp-for="Id" />
+    <input type="hidden" name="page" value="@paged.Page" />
     <div class="grid">
         <label>Employee Code
             <input asp-for="EmployeeCode" required maxlength="20" placeholder="EMP-001" />
@@ -41,7 +43,7 @@
         <button type="submit" class="primary">Save</button>
         @if (isEdit)
         {
-            <a class="button" asp-action="Index">Cancel</a>
+            <a class="button" asp-action="Index" asp-route-page="@paged.Page">Cancel</a>
         }
     </div>
 </form>
@@ -67,11 +69,11 @@
                     <td>@e.Department</td>
                     <td>@(e.IsActive ? "Yes" : "No")</td>
                     <td>
-                        <a class="button small" asp-action="Index" asp-route-heldById="@e.Id">Assets</a>
+                        <a class="button small" asp-action="Index" asp-route-heldById="@e.Id" asp-route-page="@paged.Page">Assets</a>
                         @if (isAdmin)
                         {
-                            <a class="button small" asp-action="Index" asp-route-editId="@e.Id">Edit</a>
-                            <form asp-action="Delete" asp-route-id="@e.Id" method="post" class="inline"
+                            <a class="button small" asp-action="Index" asp-route-editId="@e.Id" asp-route-page="@paged.Page">Edit</a>
+                            <form asp-action="Delete" asp-route-id="@e.Id" asp-route-page="@paged.Page" method="post" class="inline"
                                   data-confirm="Delete employee @e.EmployeeCode?" onsubmit="return confirm(this.dataset.confirm)">
                                 <button type="submit" class="small danger">Delete</button>
                             </form>
@@ -81,6 +83,7 @@
             }
         </tbody>
     </table>
+    <partial name="_Pager" model="paged" />
 </div>
 
 @if (heldBy != null && heldAssets != null)

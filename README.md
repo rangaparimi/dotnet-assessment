@@ -121,12 +121,14 @@ dotnet ef database update
 
 | Module | Method | Route | Notes |
 |---|---|---|---|
-| Assets | GET | `/api/assets` | |
+| Assets | GET | `/api/assets` | all assets (used by dropdowns) |
+| | GET | `/api/assets/paged?page=1&pageSize=10` | one page + totals, see [Pagination](#pagination) |
 | | GET | `/api/assets/{id}` | |
 | | POST | `/api/assets` | 409 if `AssetTag` exists |
 | | PUT | `/api/assets/{id}` | `status` optional; `Allocated` only via allocations |
 | | DELETE | `/api/assets/{id}` | 400 if allocated; retired if it has history |
-| Employees | GET | `/api/employees` | |
+| Employees | GET | `/api/employees` | all employees (used by dropdowns) |
+| | GET | `/api/employees/paged?page=1&pageSize=10` | one page + totals |
 | | GET | `/api/employees/{id}` | |
 | | POST | `/api/employees` | 409 if `EmployeeCode` / `Email` exists |
 | | PUT | `/api/employees/{id}` | can't set `isActive=false` while holding assets |
@@ -134,10 +136,22 @@ dotnet ef database update
 | | GET | `/api/employees/{id}/assets` | assets currently held (includes `allocationId`) |
 | Allocation | POST | `/api/allocations` | asset must be `Available`, employee active |
 | | GET | `/api/allocations?active=true` | `true` = open, `false` = returned, omitted = all |
+| | GET | `/api/allocations/paged?active=true&page=1&pageSize=10` | one page + totals, same `active` filter |
 | Returns | POST | `/api/returns` | `returnCondition`: `Good` → Available, `Damaged` → UnderRepair |
 | | GET | `/api/returns` | all returned allocations |
+| | GET | `/api/returns/paged?page=1&pageSize=10` | one page + totals |
 
 Errors come back as `{ "message": "Asset LAP-0012 is already allocated." }` with 400 / 404 / 409.
+
+### Pagination
+
+Long lists are shown 10 rows at a time. The paging is done in the database (`COUNT` + `OFFSET/FETCH`), so only one page of rows leaves SQL Server.
+
+- Every list has a `/paged` endpoint next to the full-list one: `?page=2&pageSize=10`. The reply is
+  `{ "items": [...], "page": 2, "pageSize": 10, "totalCount": 208, "totalPages": 21 }`.
+- `pageSize` is limited to 1-100, and a page number outside the range is moved to the nearest valid page.
+- The full-list endpoints stay, because the Allocation and Returns dropdowns need every row.
+- The UI shows a page bar under each table (First, Previous, "Page 2 of 21", Next, Last). It keeps the other query values (like `show=all`), and Save, Cancel, Edit and Delete return to the same page.
 
 ## Sample request bodies
 

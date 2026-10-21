@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = "Assets";
     var assets = (List<Asset>)ViewBag.Assets;
+    var paged = (PagedResult<Asset>)ViewBag.Paged;
     var isEdit = Model.Id != 0;
     var isAdmin = User.IsInRole("Admin");   // viewers only see the list
 }
@@ -11,6 +12,7 @@
 <form asp-action="Save" method="post" class="card">
     <h2>@(isEdit ? $"Edit Asset {Model.AssetTag}" : "Add Asset")</h2>
     <input type="hidden" asp-for="Id" />
+    <input type="hidden" name="page" value="@paged.Page" />
     <div class="grid">
         <label>Asset Tag
             <input asp-for="AssetTag" required maxlength="50" placeholder="LAP-0012" />
@@ -47,7 +49,7 @@
         <button type="submit" class="primary">Save</button>
         @if (isEdit)
         {
-            <a class="button" asp-action="Index">Cancel</a>
+            <a class="button" asp-action="Index" asp-route-page="@paged.Page">Cancel</a>
         }
     </div>
 </form>
@@ -76,8 +78,8 @@
                     <td>
                         @if (isAdmin)
                         {
-                            <a class="button small" asp-action="Index" asp-route-editId="@a.Id">Edit</a>
-                            <form asp-action="Delete" asp-route-id="@a.Id" method="post" class="inline"
+                            <a class="button small" asp-action="Index" asp-route-editId="@a.Id" asp-route-page="@paged.Page">Edit</a>
+                            <form asp-action="Delete" asp-route-id="@a.Id" asp-route-page="@paged.Page" method="post" class="inline"
                                   data-confirm="Delete asset @a.AssetTag?" onsubmit="return confirm(this.dataset.confirm)">
                                 <button type="submit" class="small danger">Delete</button>
                             </form>
@@ -87,4 +89,5 @@
             }
         </tbody>
     </table>
+    <partial name="_Pager" model="paged" />
 </div>

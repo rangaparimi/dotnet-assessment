@@ -4,6 +4,7 @@
     var assets = (List<Asset>)ViewBag.Assets;
     var employees = (List<Employee>)ViewBag.Employees;
     var allocations = (List<Allocation>)ViewBag.Allocations;
+    var paged = (PagedResult<Allocation>)ViewBag.Paged;
     var show = (string)ViewBag.Show;
     var isAdmin = User.IsInRole("Admin");   // viewers only see the list
 }
@@ -84,4 +85,5 @@
             }
         </tbody>
     </table>
+    <partial name="_Pager" model="paged" />
 </div>

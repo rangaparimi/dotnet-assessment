@@ -19,6 +19,7 @@ Contents
 13. [Business rules](#13-business-rules)
 14. [Glossary](#14-glossary)
 15. [Authentication and authorization](#15-authentication-and-authorization)
+16. [Pagination](#16-pagination)
 
 ---
 
@@ -724,19 +725,23 @@ Both Dockerfiles are two-stage builds: the .NET SDK image compiles and publishes
 | Method | URL | Body | Success | Errors |
 |---|---|---|---|---|
 | GET | `/api/assets` | | 200 `AssetDto[]` | |
+| GET | `/api/assets/paged?page&pageSize` | | 200 `PagedResult<AssetDto>` | |
 | GET | `/api/assets/{id}` | | 200 `AssetDto` | 404 |
 | POST | `/api/assets` | `CreateAssetDto` | 201 `AssetDto` | 400, 409 |
 | PUT | `/api/assets/{id}` | `UpdateAssetDto` | 200 `AssetDto` | 400, 404, 409 |
 | DELETE | `/api/assets/{id}` | | 200 `{ message }` | 400, 404 |
 | GET | `/api/employees` | | 200 `EmployeeDto[]` | |
+| GET | `/api/employees/paged?page&pageSize` | | 200 `PagedResult<EmployeeDto>` | |
 | GET | `/api/employees/{id}` | | 200 `EmployeeDto` | 404 |
 | POST | `/api/employees` | `CreateEmployeeDto` | 201 `EmployeeDto` | 400, 409 |
 | PUT | `/api/employees/{id}` | `UpdateEmployeeDto` | 200 `EmployeeDto` | 400, 404, 409 |
 | DELETE | `/api/employees/{id}` | | 200 `{ message }` | 400, 404 |
 | GET | `/api/employees/{id}/assets` | | 200 `HeldAssetDto[]` | 404 |
 | GET | `/api/allocations?active=true\|false` | | 200 `AllocationDto[]` | |
+| GET | `/api/allocations/paged?active&page&pageSize` | | 200 `PagedResult<AllocationDto>` | |
 | POST | `/api/allocations` | `CreateAllocationDto` | 201 `AllocationDto` | 400, 404 |
 | GET | `/api/returns` | | 200 `ReturnDto[]` | |
+| GET | `/api/returns/paged?page&pageSize` | | 200 `PagedResult<ReturnDto>` | |
 | POST | `/api/returns` | `CreateReturnDto` | 200 `ReturnDto` | 400, 404 |
 
 Swagger (Development): http://localhost:5025/swagger. Sample requests: [AssetManagement.Api.http](AssetManagement.Api/AssetManagement.Api.http).
@@ -869,3 +874,38 @@ The views only hide things for convenience. **The real enforcement is the attrib
 - If the API's port is reachable and someone obtains the key, they can do anything through the API. Keep the key secret and the API port private.
 - Role changes (editing `ADMIN_EMAILS`) apply the next time the user signs in.
 - Any Google account can sign in as a Viewer. To restrict who may sign in at all, add an allow-list check in `OnCreatingTicket`.
+
+---
+
+## 16. Pagination
+
+Long lists are shown 10 rows at a time. The database does the paging, so only one page of rows is read and sent.
+
+```
+Browser GET /Assets?page=3
+UI   AssetsController.Index(page = 3) → BaseController.GetPageAsync<Asset>("api/assets/paged", 3)
+       GET /api/assets/paged?page=3&pageSize=10         (X-Api-Key header added)
+API  AssetsController.GetPaged → AssetService.GetPagedAsync → AssetRepository.GetPagedAsync
+       _db.Assets.AsNoTracking().OrderBy(a => a.AssetTag).ToPagedResultAsync(3, 10)
+SQL  SELECT COUNT(*) FROM [Assets]
+     SELECT ... FROM [Assets] ORDER BY [AssetTag] OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY
+API  PagedResult<Asset>.Map(ToDto) → PagedResult<AssetDto>
+       { "items": [10 rows], "page": 3, "pageSize": 10, "totalCount": 208, "totalPages": 21 }
+UI   ViewBag.Assets = items, ViewBag.Paged = the result → table + Views/Shared/_Pager.cshtml
+```
+
+| Piece | Where | Job |
+|---|---|---|
+| `PagedResult<T>` | `Api/Common/PagedResult.cs` | the reply: items plus page, pageSize, totalCount, totalPages; `Map` converts entities to DTOs |
+| `ToPagedResultAsync` | `Api/Repositories/PagingExtensions.cs` | counts, clamps `pageSize` to 1-100 and `page` to the valid range, then `Skip/Take` |
+| `/paged` endpoints | the four API controllers | `?page=1&pageSize=10`; `allocations/paged` also takes `active` |
+| `PagedResult<T>`, `IPaged` | `UI/Models/PagedResult.cs` | the same shape in the UI; `IPaged` lets one pager partial serve every list |
+| `GetPageAsync` | `UI/Controllers/BaseController.cs` | adds `page` and `pageSize` (10) to the URL |
+| `_Pager.cshtml` | `UI/Views/Shared` | First, Previous, "Page x of y", Next, Last; hidden when there is one page |
+
+Rules and details:
+
+- **Stable order.** Every paged query is ordered, and ties are broken by `Id` (allocations, returns). Without that, rows with the same date could appear on two pages or none.
+- **The full-list endpoints stay.** The Allocation and Returns dropdowns need every asset, employee and open allocation, so they still call the unpaged endpoints.
+- **The page is remembered.** The pager keeps other query values (like `show=all`) and drops `editId`. The Edit, Cancel, Save and Delete actions carry `page` and redirect back to it. A page past the end is moved back to the last page, so deleting the last row on the last page lands on the new last page.
+- **Not paged:** the "Assets held by" table on the Employees page, which only lists one employee's open allocations.

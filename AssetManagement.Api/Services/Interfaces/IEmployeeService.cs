@@ -1,3 +1,4 @@
+using AssetManagement.Api.Common;
 using AssetManagement.Api.DTOs;
 
 namespace AssetManagement.Api.Services.Interfaces;
@@ -5,6 +6,7 @@ namespace AssetManagement.Api.Services.Interfaces;
 public interface IEmployeeService
 {
     Task<List<EmployeeDto>> GetAllAsync();
+    Task<PagedResult<EmployeeDto>> GetPagedAsync(int page, int pageSize);
     Task<ServiceResult<EmployeeDto>> GetByIdAsync(int id);
     Task<ServiceResult<EmployeeDto>> CreateAsync(CreateEmployeeDto dto);
     Task<ServiceResult<EmployeeDto>> UpdateAsync(int id, UpdateEmployeeDto dto);

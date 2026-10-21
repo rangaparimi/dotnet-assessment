@@ -1,0 +1,46 @@
+@using Microsoft.AspNetCore.WebUtilities
+@model IPaged
+@{
+    // Keeps the other query values (show, heldById...) and drops page and editId
+    string PageUrl(int page)
+    {
+        var values = Context.Request.Query
+            .Where(q => q.Key != "page" && q.Key != "editId")
+            .ToDictionary(q => q.Key, q => (string?)q.Value.ToString());
+        values["page"] = page.ToString();
+        return QueryHelpers.AddQueryString(Context.Request.Path, values);
+    }
+
+    var first = (Model.Page - 1) * Model.PageSize + 1;
+    var last = Math.Min(Model.Page * Model.PageSize, Model.TotalCount);
+}
+
+@if (Model.TotalPages > 1)
+{
+    <div class="pager">
+        <span>Showing @first-@last of @Model.TotalCount</span>
+        <span class="pager-links">
+            @if (Model.Page > 1)
+            {
+                <a class="button small" href="@PageUrl(1)">&laquo; First</a>
+                <a class="button small" href="@PageUrl(Model.Page - 1)">&lsaquo; Previous</a>
+            }
+            else
+            {
+                <span class="button small disabled">&laquo; First</span>
+                <span class="button small disabled">&lsaquo; Previous</span>
+            }
+            <span>Page @Model.Page of @Model.TotalPages</span>
+            @if (Model.Page < Model.TotalPages)
+            {
+                <a class="button small" href="@PageUrl(Model.Page + 1)">Next &rsaquo;</a>
+                <a class="button small" href="@PageUrl(Model.TotalPages)">Last &raquo;</a>
+            }
+            else
+            {
+                <span class="button small disabled">Next &rsaquo;</span>
+                <span class="button small disabled">Last &raquo;</span>
+            }
+        </span>
+    </div>
+}

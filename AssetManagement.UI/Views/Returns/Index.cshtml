@@ -3,6 +3,7 @@
     ViewData["Title"] = "Returns";
     var openAllocations = (List<Allocation>)ViewBag.OpenAllocations;
     var returns = (List<AssetReturn>)ViewBag.Returns;
+    var paged = (PagedResult<AssetReturn>)ViewBag.Paged;
     var isAdmin = User.IsInRole("Admin");   // viewers only see the list
 }
 
@@ -63,4 +64,5 @@
             }
         </tbody>
     </table>
+    <partial name="_Pager" model="paged" />
 </div>

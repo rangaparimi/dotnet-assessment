@@ -1,3 +1,4 @@
+using AssetManagement.Api.Common;
 using AssetManagement.Api.DTOs;
 using AssetManagement.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,14 @@ public class AllocationsController : ControllerBase
     public async Task<ActionResult<List<AllocationDto>>> GetAll([FromQuery] bool? active)
     {
         return Ok(await _allocationService.GetAllAsync(active));
+    }
+
+    // GET /api/allocations/paged?active=true&page=2&pageSize=10  -> one page, same active filter as above
+    [HttpGet("paged")]
+    public async Task<ActionResult<PagedResult<AllocationDto>>> GetPaged(
+        [FromQuery] bool? active, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        return Ok(await _allocationService.GetPagedAsync(active, page, pageSize));
     }
 
     [HttpPost]
