@@ -6,6 +6,7 @@ using AssetManagement.Api.Repositories.Interfaces;
 using AssetManagement.Api.Services;
 using AssetManagement.Api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,9 +30,29 @@ builder.Services.AddScoped<IReturnService, ReturnService>();
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-// Swagger
+// Fail at startup (not on the first request) if the shared API key is missing
+_ = builder.Configuration["ApiKey"]
+    ?? throw new InvalidOperationException("ApiKey is not configured. Set it in appsettings or the ApiKey environment variable.");
+
+// Swagger - the Authorize button lets you enter the API key for "Try it out"
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(o =>
+{
+    o.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+    {
+        Name = ApiKeyMiddleware.HeaderName,
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Description = "Shared API key (the same value the UI sends)."
+    });
+    o.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "ApiKey" } },
+            Array.Empty<string>()
+        }
+    });
+});
 
 // CORS - allow the AssetManagement.UI site to call this API from the browser
 var uiOrigins = builder.Configuration.GetSection("UiOrigins").Get<string[]>() ?? [];
@@ -55,6 +76,7 @@ if (app.Configuration.GetValue<bool>("ApplyMigrationsOnStartup"))
 // CORS first so error responses also carry CORS headers and the UI can read them
 app.UseCors("ui");
 app.UseExceptionHandler();
+app.UseMiddleware<ApiKeyMiddleware>();   // every /api call needs the X-Api-Key header
 
 if (app.Environment.IsDevelopment())
 {

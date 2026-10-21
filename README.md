@@ -31,22 +31,51 @@ Allocation and Returns share one table (`AssetAllocations`). A return closes an 
    dotnet ef database update
    ```
    The `InitialCreate` migration is already in `Migrations/`, so `database update` creates the `AssetManagement` database and all 3 tables.
-3. Run the API and the UI (two terminals, from the repo root):
+3. Set up Google sign-in (see [Sign-in setup](#sign-in-setup) below) and store the values as user-secrets:
+   ```
+   dotnet user-secrets set "Authentication:Google:ClientId" "<your client id>" --project AssetManagement.UI
+   dotnet user-secrets set "Authentication:Google:ClientSecret" "<your client secret>" --project AssetManagement.UI
+   dotnet user-secrets set "Auth:AdminEmails" "you@gmail.com" --project AssetManagement.UI
+   ```
+4. Run the API and the UI (two terminals, from the repo root):
    ```
    dotnet run --project AssetManagement.API --launch-profile http
    dotnet run --project AssetManagement.UI --launch-profile http
    ```
    - UI: http://localhost:5003
-   - Swagger: http://localhost:5025/swagger
+   - Swagger: http://localhost:5025/swagger (click **Authorize** and enter the API key, `dev-only-api-key-change-me` in Development)
+
+## Sign-in setup
+
+Users sign in with Google (OAuth). The UI only trusts what Google says about who the user is.
+
+**1. Create the Google credentials** (once):
+1. Open https://console.cloud.google.com/apis/credentials and pick or create a project.
+2. If asked, configure the *OAuth consent screen* (External, add your email as a test user).
+3. **Create credentials → OAuth client ID → Web application.**
+4. Under **Authorized redirect URIs** add `http://localhost:5003/signin-google`.
+5. Copy the **Client ID** and **Client secret**.
+
+**2. Give them to the app:** as user-secrets for local runs (step 3 above), or in `.env` for Docker (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`).
+
+**Who can do what**
+
+| Role | Who | Can |
+|---|---|---|
+| Admin | emails listed in `Auth:AdminEmails` / `ADMIN_EMAILS` (comma separated) | view everything, and add, edit, delete, allocate and return |
+| Viewer | any other Google account that signs in | view only (the buttons and forms are hidden, and the server refuses changes anyway) |
+| not signed in | | nothing, redirected to the sign-in page |
+
+**How the API is protected:** the API is not open to users. Every `/api` call must send the shared secret in the `X-Api-Key` header, and only the UI server knows it (`ApiKey` setting; `API_KEY` in `.env`). In Development both projects use `dev-only-api-key-change-me` from `appsettings.Development.json`; never use that value anywhere real.
 
 ## Run with Docker
 
 Needs only Docker Desktop (no .NET SDK or SQL Server on the machine). From the repo root:
 ```
-cp .env.example .env        # then open .env and set your own SA_PASSWORD
+cp .env.example .env        # then open .env and set SA_PASSWORD, API_KEY, GOOGLE_CLIENT_ID/SECRET, ADMIN_EMAILS
 docker compose up --build
 ```
-All Docker settings and secrets (SQL `sa` password, ports, environment) live in `.env`, which is git-ignored and never committed. `.env.example` is the committed template. If `SA_PASSWORD` is missing, `docker compose` stops with an error instead of using a default.
+All Docker settings and secrets (SQL `sa` password, API key, Google credentials, admin emails, ports, environment) live in `.env`, which is git-ignored and never committed. `.env.example` is the committed template. If a required value is missing, `docker compose` stops with an error instead of using a default. The Google redirect URI for Docker is the same, `http://localhost:5003/signin-google`.
 - UI: http://localhost:5003
 - Swagger: http://localhost:5025/swagger
 
@@ -69,7 +98,7 @@ How it works: the browser only talks to the UI. Each controller calls the API wi
 
 ```
 AssetManagement.UI/
-├── Controllers/   BaseController (GetAsync / SendAsync helpers) + one controller per page
+├── Controllers/   BaseController (GetAsync / SendAsync helpers), AccountController (sign-in/out) + one controller per page
 ├── Models/        Asset, Employee, Allocation, AssetReturn - used for both the lists and the forms
 ├── Views/         Shared/_Layout.cshtml, Shared/_Messages.cshtml, <Controller>/Index.cshtml
 └── wwwroot/css/   site.css (static files are still served from wwwroot)

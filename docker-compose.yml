@@ -35,6 +35,7 @@ services:
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
       ConnectionStrings__Default: "Server=db,1433;Database=AssetManagement;User Id=sa;Password=${SA_PASSWORD:?SA_PASSWORD is missing};TrustServerCertificate=True"
       ApplyMigrationsOnStartup: "${APPLY_MIGRATIONS_ON_STARTUP:-false}"
+      ApiKey: "${API_KEY:?API_KEY is missing - set it in .env}"
     ports:
       - "${API_PORT:-5025}:8080"
     depends_on:
@@ -48,6 +49,10 @@ services:
       dockerfile: AssetManagement.UI/Dockerfile
     environment:
       ApiBaseUrl: "http://api:8080"         # container-to-container address, not a secret
+      ApiKey: "${API_KEY:?API_KEY is missing - set it in .env}"
+      Authentication__Google__ClientId: "${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID is missing - see README 'Sign-in setup'}"
+      Authentication__Google__ClientSecret: "${GOOGLE_CLIENT_SECRET:?GOOGLE_CLIENT_SECRET is missing - see README 'Sign-in setup'}"
+      Auth__AdminEmails: "${ADMIN_EMAILS:-}"
     ports:
       - "${UI_PORT:-5003}:8080"
     depends_on:

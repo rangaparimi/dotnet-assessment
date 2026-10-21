@@ -1,4 +1,5 @@
 using AssetManagement.UI.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssetManagement.UI.Controllers;
@@ -19,6 +20,7 @@ public class AssetsController : BaseController
 
     // POST /Assets/Save - adds a new asset (Id = 0) or updates an existing one
     [HttpPost]
+    [Authorize(Roles = "Admin")]   // viewers can look but not change
     public async Task<IActionResult> Save(Asset asset)
     {
         if (ModelState.IsValid)
@@ -41,6 +43,7 @@ public class AssetsController : BaseController
 
     // POST /Assets/Delete/5
     [HttpPost]
+    [Authorize(Roles = "Admin")]   // viewers can look but not change
     public async Task<IActionResult> Delete(int id)
     {
         await SendAsync(HttpMethod.Delete, $"api/assets/{id}");

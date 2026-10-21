@@ -3,8 +3,11 @@
     ViewData["Title"] = "Assets";
     var assets = (List<Asset>)ViewBag.Assets;
     var isEdit = Model.Id != 0;
+    var isAdmin = User.IsInRole("Admin");   // viewers only see the list
 }
 
+@if (isAdmin)
+{
 <form asp-action="Save" method="post" class="card">
     <h2>@(isEdit ? $"Edit Asset {Model.AssetTag}" : "Add Asset")</h2>
     <input type="hidden" asp-for="Id" />
@@ -48,6 +51,7 @@
         }
     </div>
 </form>
+}
 
 <div class="card">
     <h2>Assets</h2>
@@ -70,11 +74,14 @@
                     <td>@a.PurchaseDate?.ToString("yyyy-MM-dd")</td>
                     <td><span class="badge @a.Status">@a.Status</span></td>
                     <td>
-                        <a class="button small" asp-action="Index" asp-route-editId="@a.Id">Edit</a>
-                        <form asp-action="Delete" asp-route-id="@a.Id" method="post" class="inline"
-                              data-confirm="Delete asset @a.AssetTag?" onsubmit="return confirm(this.dataset.confirm)">
-                            <button type="submit" class="small danger">Delete</button>
-                        </form>
+                        @if (isAdmin)
+                        {
+                            <a class="button small" asp-action="Index" asp-route-editId="@a.Id">Edit</a>
+                            <form asp-action="Delete" asp-route-id="@a.Id" method="post" class="inline"
+                                  data-confirm="Delete asset @a.AssetTag?" onsubmit="return confirm(this.dataset.confirm)">
+                                <button type="submit" class="small danger">Delete</button>
+                            </form>
+                        }
                     </td>
                 </tr>
             }

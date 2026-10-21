@@ -5,8 +5,11 @@
     var heldBy = ViewBag.HeldBy as Employee;
     var heldAssets = ViewBag.HeldAssets as List<Allocation>;
     var isEdit = Model.Id != 0;
+    var isAdmin = User.IsInRole("Admin");   // viewers only see the list
 }
 
+@if (isAdmin)
+{
 <form asp-action="Save" method="post" class="card">
     <h2>@(isEdit ? $"Edit Employee {Model.EmployeeCode}" : "Add Employee")</h2>
     <input type="hidden" asp-for="Id" />
@@ -42,6 +45,7 @@
         }
     </div>
 </form>
+}
 
 <div class="card">
     <h2>Employees</h2>
@@ -64,11 +68,14 @@
                     <td>@(e.IsActive ? "Yes" : "No")</td>
                     <td>
                         <a class="button small" asp-action="Index" asp-route-heldById="@e.Id">Assets</a>
-                        <a class="button small" asp-action="Index" asp-route-editId="@e.Id">Edit</a>
-                        <form asp-action="Delete" asp-route-id="@e.Id" method="post" class="inline"
-                              data-confirm="Delete employee @e.EmployeeCode?" onsubmit="return confirm(this.dataset.confirm)">
-                            <button type="submit" class="small danger">Delete</button>
-                        </form>
+                        @if (isAdmin)
+                        {
+                            <a class="button small" asp-action="Index" asp-route-editId="@e.Id">Edit</a>
+                            <form asp-action="Delete" asp-route-id="@e.Id" method="post" class="inline"
+                                  data-confirm="Delete employee @e.EmployeeCode?" onsubmit="return confirm(this.dataset.confirm)">
+                                <button type="submit" class="small danger">Delete</button>
+                            </form>
+                        }
                     </td>
                 </tr>
             }

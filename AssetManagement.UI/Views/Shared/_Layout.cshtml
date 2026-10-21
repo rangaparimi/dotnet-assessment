@@ -1,6 +1,7 @@
 @{
     var current = ViewContext.RouteData.Values["controller"] as string;
     string TabClass(string name) => name == current ? "tab active" : "tab";
+    var signedIn = User.Identity?.IsAuthenticated == true;
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -12,13 +13,26 @@
 </head>
 <body>
     <header>
-        <h1>Asset Management</h1>
-        <nav>
-            <a class="@TabClass("Assets")" asp-controller="Assets" asp-action="Index">Assets</a>
-            <a class="@TabClass("Employees")" asp-controller="Employees" asp-action="Index">Employees</a>
-            <a class="@TabClass("Allocations")" asp-controller="Allocations" asp-action="Index">Allocation</a>
-            <a class="@TabClass("Returns")" asp-controller="Returns" asp-action="Index">Returns</a>
-        </nav>
+        <div class="header-top">
+            <h1>Asset Management</h1>
+            @if (signedIn)
+            {
+                <form asp-controller="Account" asp-action="Logout" method="post" class="user">
+                    <span>@User.Identity!.Name</span>
+                    <span class="badge @(User.IsInRole("Admin") ? "Available" : "Retired")">@(User.IsInRole("Admin") ? "Admin" : "Viewer")</span>
+                    <button type="submit" class="small">Sign out</button>
+                </form>
+            }
+        </div>
+        @if (signedIn)
+        {
+            <nav>
+                <a class="@TabClass("Assets")" asp-controller="Assets" asp-action="Index">Assets</a>
+                <a class="@TabClass("Employees")" asp-controller="Employees" asp-action="Index">Employees</a>
+                <a class="@TabClass("Allocations")" asp-controller="Allocations" asp-action="Index">Allocation</a>
+                <a class="@TabClass("Returns")" asp-controller="Returns" asp-action="Index">Returns</a>
+            </nav>
+        }
     </header>
 
     <main>

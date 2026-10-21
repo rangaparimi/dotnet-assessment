@@ -18,6 +18,7 @@ Contents
 12. [Reference: routes and endpoints](#12-reference-routes-and-endpoints)
 13. [Business rules](#13-business-rules)
 14. [Glossary](#14-glossary)
+15. [Authentication and authorization](#15-authentication-and-authorization)
 
 ---
 
@@ -156,6 +157,7 @@ UI  (AssetManagement.UI)                         API  (AssetManagement.Api)
 ```
 request ─▶ UseCors("ui")          adds CORS headers (first, so error responses get them too)
         ─▶ UseExceptionHandler()  catches exceptions thrown further down -> GlobalExceptionHandler
+        ─▶ ApiKeyMiddleware       /api calls without the right X-Api-Key header -> 401 { message }
         ─▶ UseSwagger/UI          Development only: /swagger
         ─▶ UseHttpsRedirection()  redirects to https if an https port is configured
         ─▶ UseAuthorization()     (no auth rules defined yet)
@@ -171,9 +173,11 @@ request ─▶ UseCors("ui")          adds CORS headers (first, so error respons
 | `AddControllersWithViews(...)` | MVC controllers + Razor views |
 | `AutoValidateAntiforgeryTokenAttribute` (global filter) | every POST must carry the hidden anti-forgery token |
 | `SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true` | UI models are shared by lists and forms; only fields with explicit `[Required]` are required |
-| `AddHttpClient("Api", BaseAddress = ApiBaseUrl)` | named `HttpClient` used for all API calls, created through `IHttpClientFactory` |
+| `AddHttpClient("Api", BaseAddress = ApiBaseUrl, header X-Api-Key)` | named `HttpClient` used for all API calls, created through `IHttpClientFactory`; sends the shared API key on every call |
+| `AddAuthentication().AddCookie().AddGoogle()` | cookie sign-in; Google (OAuth) proves who the user is; role claim added after sign-in |
+| `AddAuthorization(FallbackPolicy = RequireAuthenticatedUser)` | every page needs a signed-in user unless marked `[AllowAnonymous]` |
 
-Pipeline: `UseStaticFiles()` (serves `wwwroot/css/site.css`) → `UseRouting()` → `MapControllerRoute("{controller=Assets}/{action=Index}/{id?}")`. So `/` opens `AssetsController.Index`.
+Pipeline: `UseStaticFiles()` (serves `wwwroot/css/site.css`) → `UseRouting()` → `UseAuthentication()` → `UseAuthorization()` → `MapControllerRoute("{controller=Assets}/{action=Index}/{id?}")`. So `/` opens `AssetsController.Index` for a signed-in user, and the sign-in page for everyone else. See [section 15](#15-authentication-and-authorization).
 
 ---
 
@@ -798,3 +802,70 @@ All of these live in the API services; the UI only mirrors a few of them in its 
 | **Dependency injection (Scoped)** | the container builds and disposes objects; Scoped = one instance per HTTP request |
 | **CORS** | browser rule for cross-origin calls; configured on the API, not needed by the server-side MVC UI |
 | **Docker Compose** | starts db, api and ui together with settings from `.env` |
+
+---
+
+## 15. Authentication and authorization
+
+Two separate protections, each guarding a different door:
+
+```
+ user ──(1) Google sign-in + role──▶ UI ──(2) X-Api-Key header──▶ API ──▶ database
+```
+
+| | Protects | Mechanism | Where |
+|---|---|---|---|
+| **(1) User sign-in and roles** | the UI pages | Google OAuth sign-in, then a cookie; role = Admin or Viewer | UI |
+| **(2) API key** | the API | shared secret in the `X-Api-Key` header | UI sends it, API checks it |
+
+### 15.1 Sign-in with Google (authentication)
+
+```
+Browser GET /Assets            not signed in
+UI  fallback policy ──▶ 302 /Account/Login?ReturnUrl=/Assets
+Browser POST /Account/GoogleLogin       ("Sign in with Google" button, anti-forgery token included)
+UI  Challenge(Google) ──▶ 302 https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=http://localhost:5003/signin-google&scope=openid profile email
+Google  user signs in and agrees ──▶ 302 /signin-google?code=...
+UI  Google handler (built into ASP.NET Core, route /signin-google)
+      exchanges the code for the user's profile (server to server, using ClientSecret)
+      OnCreatingTicket: email in Auth:AdminEmails ? role Admin : role Viewer
+      writes the sign-in cookie (name, email, role)
+    ──▶ 302 back to /Assets
+```
+
+- The app never sees or stores a Google password. Google only tells it who the user is.
+- The user stays signed in through the cookie until they click **Sign out** (`POST /Account/Logout`).
+- Roles are not stored anywhere. They are worked out at sign-in from `Auth:AdminEmails` and kept inside the cookie.
+- In Docker the cookie-encryption keys live inside the container, so a container restart signs everyone out.
+
+### 15.2 Roles (authorization)
+
+| Where | Rule |
+|---|---|
+| global fallback policy | every page requires a signed-in user, unless marked `[AllowAnonymous]` (only `Account/Login`, `GoogleLogin` and `AccessDenied`) |
+| every POST action (`Save`, `Delete`, `Create`) | `[Authorize(Roles = "Admin")]`, so a Viewer's request is refused (redirect to `/Account/AccessDenied`) |
+| views | `User.IsInRole("Admin")` hides the forms and the Edit, Delete and Return buttons from Viewers |
+
+The views only hide things for convenience. **The real enforcement is the attribute on the actions**, so a Viewer can't change data even by sending the request by hand.
+
+### 15.3 API key (protecting the API)
+
+- The API's `ApiKeyMiddleware` requires the `X-Api-Key` header on every path under `/api`. A missing or wrong key gets `401 { "message": "Missing or invalid API key." }`. The key is compared in fixed time.
+- The UI adds the header to every call through the named `HttpClient`, so users never see it.
+- Swagger's pages are not under `/api`, so they stay reachable. Its **Authorize** button sends the key for "Try it out".
+- The API does not know which user is calling. Per-user roles are enforced in the UI, and the API trusts the UI because it holds the key.
+- Both apps refuse to start if their key setting is missing.
+
+### 15.4 Settings
+
+| Setting | Where it comes from |
+|---|---|
+| `Authentication:Google:ClientId`, `Authentication:Google:ClientSecret` | user-secrets (local) / `.env` → `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (Docker) |
+| `Auth:AdminEmails` (comma separated) | user-secrets (local) / `.env` → `ADMIN_EMAILS` (Docker) |
+| `ApiKey` (UI and API, same value) | `appsettings.Development.json` (dev-only value) / `.env` → `API_KEY` (Docker) |
+
+### 15.5 Limits to be aware of
+
+- If the API's port is reachable and someone obtains the key, they can do anything through the API. Keep the key secret and the API port private.
+- Role changes (editing `ADMIN_EMAILS`) apply the next time the user signs in.
+- Any Google account can sign in as a Viewer. To restrict who may sign in at all, add an allow-list check in `OnCreatingTicket`.

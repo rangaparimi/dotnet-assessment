@@ -1,4 +1,5 @@
 using AssetManagement.UI.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssetManagement.UI.Controllers;
@@ -27,6 +28,7 @@ public class EmployeesController : BaseController
 
     // POST /Employees/Save - adds a new employee (Id = 0) or updates an existing one
     [HttpPost]
+    [Authorize(Roles = "Admin")]   // viewers can look but not change
     public async Task<IActionResult> Save(Employee employee)
     {
         if (ModelState.IsValid)
@@ -49,6 +51,7 @@ public class EmployeesController : BaseController
 
     // POST /Employees/Delete/3
     [HttpPost]
+    [Authorize(Roles = "Admin")]   // viewers can look but not change
     public async Task<IActionResult> Delete(int id)
     {
         await SendAsync(HttpMethod.Delete, $"api/employees/{id}");

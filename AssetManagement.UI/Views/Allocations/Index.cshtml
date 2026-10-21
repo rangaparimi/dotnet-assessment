@@ -5,8 +5,11 @@
     var employees = (List<Employee>)ViewBag.Employees;
     var allocations = (List<Allocation>)ViewBag.Allocations;
     var show = (string)ViewBag.Show;
+    var isAdmin = User.IsInRole("Admin");   // viewers only see the list
 }
 
+@if (isAdmin)
+{
 <form asp-action="Create" method="post" class="card">
     <h2>Allocate Asset</h2>
     <div class="grid">
@@ -38,6 +41,7 @@
         <button type="submit" class="primary">Allocate</button>
     </div>
 </form>
+}
 
 <div class="card">
     <div class="card-header">
@@ -71,7 +75,7 @@
                     <td>@x.ReturnCondition</td>
                     <td>@x.Remarks</td>
                     <td>
-                        @if (x.ReturnedDate == null)
+                        @if (isAdmin && x.ReturnedDate == null)
                         {
                             <a class="button small" asp-controller="Returns" asp-action="Index" asp-route-allocationId="@x.Id">Return</a>
                         }

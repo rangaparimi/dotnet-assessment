@@ -1,4 +1,5 @@
 using AssetManagement.UI.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssetManagement.UI.Controllers;
@@ -16,6 +17,7 @@ public class AllocationsController : BaseController
 
     // POST /Allocations/Create
     [HttpPost]
+    [Authorize(Roles = "Admin")]   // viewers can look but not change
     public async Task<IActionResult> Create(Allocation allocation)
     {
         if (ModelState.IsValid && await SendAsync(HttpMethod.Post, "api/allocations", allocation))

@@ -3,8 +3,11 @@
     ViewData["Title"] = "Returns";
     var openAllocations = (List<Allocation>)ViewBag.OpenAllocations;
     var returns = (List<AssetReturn>)ViewBag.Returns;
+    var isAdmin = User.IsInRole("Admin");   // viewers only see the list
 }
 
+@if (isAdmin)
+{
 <form asp-action="Create" method="post" class="card">
     <h2>Record Return</h2>
     <div class="grid">
@@ -32,6 +35,7 @@
         <button type="submit" class="primary">Record Return</button>
     </div>
 </form>
+}
 
 <div class="card">
     <h2>Returned Assets</h2>

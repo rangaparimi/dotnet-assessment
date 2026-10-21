@@ -1,4 +1,5 @@
 using AssetManagement.UI.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssetManagement.UI.Controllers;
@@ -16,6 +17,7 @@ public class ReturnsController : BaseController
 
     // POST /Returns/Create
     [HttpPost]
+    [Authorize(Roles = "Admin")]   // viewers can look but not change
     public async Task<IActionResult> Create(AssetReturn assetReturn)
     {
         if (ModelState.IsValid && await SendAsync(HttpMethod.Post, "api/returns", assetReturn))
