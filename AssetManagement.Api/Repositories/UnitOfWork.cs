@@ -14,5 +14,5 @@ public class UnitOfWork : IUnitOfWork
 
     // All repositories share the same scoped AppDbContext, so this saves
     // everything they staged in a single transaction
-    public Task<int> SaveChangesAsync() => _db.SaveChangesAsync();
+    public Task<int> SaveChangesAsync() => _db.SaveChangesAsync(); //saves all the changes made in the database in a single transaction
 }

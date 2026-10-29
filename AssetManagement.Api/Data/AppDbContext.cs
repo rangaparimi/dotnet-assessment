@@ -14,7 +14,8 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Assets
-        modelBuilder.Entity<Asset>(e => //building the structure for the asset table and providing constraints for the fields
+        modelBuilder.Entity<Asset>(e => 
+        //building the structure for the asset table and providing constraints for the fields
         {
             e.HasIndex(a => a.AssetTag).IsUnique();
             e.Property(a => a.AssetTag).HasMaxLength(50).IsRequired();

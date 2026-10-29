@@ -84,7 +84,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseHttpsRedirection(); //used for redirecting the http requests to https requests and it is used for security purposes and it is also used for SEO purposes because google gives preference to https websites over http websites
 app.UseAuthorization();
 app.MapControllers();
 

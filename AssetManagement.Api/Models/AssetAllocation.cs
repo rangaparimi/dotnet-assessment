@@ -2,8 +2,8 @@ namespace AssetManagement.Api.Models;
 
 public class AssetAllocation
 {
-    public int Id { get; set; }
-    public int AssetId { get; set; }
+    public int Id { get; set; } //hidden primary key, var used for internal tracking of the allocation record
+    public int AssetId { get; set; }    //unique
     public Asset Asset { get; set; } = null!;
     public int EmployeeId { get; set; }
     public Employee Employee { get; set; } = null!;

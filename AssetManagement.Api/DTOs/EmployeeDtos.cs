@@ -41,9 +41,17 @@ public class EmployeeDto
     public string FullName { get; set; } = "";
     public string Email { get; set; } = "";
     public string Department { get; set; } = "";
+    public bool IsActive { get; set; } 
+}
+public class EmployeeDto1
+{
+    public int Id { get; set; }
+    public string EmployeeCode { get; set; } = "";
+    public string FullName { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string Department { get; set; } = "";
     public bool IsActive { get; set; }
 }
-
 // An asset currently held by an employee (one open allocation)
 public class HeldAssetDto
 {

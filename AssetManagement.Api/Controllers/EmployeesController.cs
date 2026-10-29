@@ -9,7 +9,8 @@ namespace AssetManagement.Api.Controllers;
 [Route("api/employees")]
 public class EmployeesController : ControllerBase
 {
-    private readonly IEmployeeService _employeeService;
+    private readonly IEmployeeService _employeeService; //Dependency injection of the employee service with an interface
+
 
     public EmployeesController(IEmployeeService employeeService)
     {
@@ -22,7 +23,6 @@ public class EmployeesController : ControllerBase
         return Ok(await _employeeService.GetAllAsync());
     }
 
-    [HttpGet("{id:int}")]
     // GET /api/employees/paged?page=2&pageSize=10  -> one page of employees plus the totals
     [HttpGet("paged")]
     public async Task<ActionResult<PagedResult<EmployeeDto>>> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
@@ -30,6 +30,7 @@ public class EmployeesController : ControllerBase
         return Ok(await _employeeService.GetPagedAsync(page, pageSize));
     }
 
+    [HttpGet("{id:int}")]
     public async Task<ActionResult<EmployeeDto>> GetById(int id)
     {
         var result = await _employeeService.GetByIdAsync(id);

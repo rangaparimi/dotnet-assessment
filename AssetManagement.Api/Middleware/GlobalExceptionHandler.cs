@@ -8,7 +8,7 @@ namespace AssetManagement.Api.Middleware;
 // a JSON response: { "message": "..." }. Expected business errors (not found,
 // duplicate, asset not available...) never reach here - services return them
 // as ServiceResult. This only handles the unexpected ones.
-public class GlobalExceptionHandler : IExceptionHandler
+public class GlobalExceptionHandler : IExceptionHandler //here
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
 
@@ -31,7 +31,7 @@ public class GlobalExceptionHandler : IExceptionHandler
         return true;
     }
 
-    private static (int StatusCode, string Message) Map(Exception exception)
+    private static (int StatusCode, string Message) Map(Exception exception) //in Map
     {
         // Someone else changed the same row at the same time
         if (exception is DbUpdateConcurrencyException)
